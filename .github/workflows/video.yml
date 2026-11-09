@@ -1,0 +1,32 @@
+name: video
+
+on:
+  repository_dispatch:
+    types: [yt]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          pip install --quiet requests pillow img2pdf yt-dlp
+      - name: build + upload + callback
+        env:
+          YT_URL: ${{ github.event.client_payload.url }}
+          YT_KIND: ${{ github.event.client_payload.kind }}
+          YT_CB: ${{ github.event.client_payload.cb }}
+          YT_TOK: ${{ github.event.client_payload.tok }}
+          YT_MAX_MB: ${{ github.event.client_payload.max_mb }}
+          YT_SRC: ${{ github.event.client_payload.src }}
+        run: python build_video.py --url "$YT_URL" --kind "${YT_KIND:-best}" --max-mb "${YT_MAX_MB:-1000}" --src "$YT_SRC" --cb "$YT_CB" --tok "$YT_TOK"

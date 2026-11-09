@@ -1,0 +1,29 @@
+name: gallery
+
+on:
+  repository_dispatch:
+    types: [nh]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet requests img2pdf pillow
+      - name: build + upload + callback
+        env:
+          NH_ID: ${{ github.event.client_payload.id }}
+          NH_FMT: ${{ github.event.client_payload.fmt }}
+          NH_HOST: ${{ github.event.client_payload.host }}
+          NH_META: ${{ github.event.client_payload.meta }}
+          NH_CB: ${{ github.event.client_payload.cb }}
+          NH_TOK: ${{ github.event.client_payload.tok }}
+          NH_PDFQ: ${{ github.event.client_payload.pdfq }}
+        run: python build_gallery.py --id "$NH_ID" --fmt "$NH_FMT" ${NH_HOST:+--host "$NH_HOST"} ${NH_PDFQ:+--pdfq "$NH_PDFQ"} --meta "$NH_META" --cb "$NH_CB" --tok "$NH_TOK"
